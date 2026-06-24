@@ -15,10 +15,13 @@ def create_order(
     subtotal = 0.0
     db_items = []
 
-    for item in order_data.items:
+    # Sort items to prevent deadlocks when locking multiple rows
+    sorted_items = sorted(order_data.items, key=lambda x: x.product_name)
+
+    for item in sorted_items:
         db_product = db.query(models.Product).filter(
             models.Product.name == item.product_name
-        ).first()
+        ).with_for_update().first()
 
         if not db_product:
             raise HTTPException(
